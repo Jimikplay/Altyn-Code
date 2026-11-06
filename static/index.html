@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Live Code Audit — тестовый стенд</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead">
+      <div class="mark" aria-hidden="true"><span>{</span><span>≠</span><span>}</span></div>
+      <div class="brand"><strong>Live Code Audit</strong><span>Локальный стенд проверки Go-кода</span></div>
+      <span class="environment">Тестовый интерфейс</span>
+    </header>
+
+    <main>
+      <div class="page-heading">
+        <div><h1>Проверка понимания — в работе.</h1><p>Три проверенные тестами мутации. Десять минут на поиск, исправление и объяснение.</p></div>
+        <div id="state-badge" class="state-badge">Аудит не создан</div>
+      </div>
+
+      <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+
+      <section id="setup" class="setup" aria-labelledby="setup-heading">
+        <div class="setup-main">
+          <div class="section-heading"><h2 id="setup-heading">Подготовить проект</h2><p>Для первого прогона откройте готовый Go-проект. Исходные тесты запускаются в Docker.</p></div>
+          <button id="create-demo" class="button primary large" type="button">Создать демо-аудит</button>
+          <p class="muted">Подбор трёх мутаций занимает около 3–5 минут. Не обновляйте страницу во время подготовки.</p>
+          <div class="separator"><span>или возьмите свой проект</span></div>
+          <form id="zip-form" class="source-form">
+            <label for="zip-file">ZIP-архив Go-модуля</label>
+            <div class="input-row"><input id="zip-file" type="file" accept=".zip,application/zip" required><button class="button secondary" type="submit">Загрузить ZIP</button></div>
+          </form>
+          <form id="github-form" class="source-form">
+            <label for="github-url">Публичный репозиторий GitHub</label>
+            <div class="input-row"><input id="github-url" type="url" placeholder="https://github.com/owner/repo" spellcheck="false" required><button class="button secondary" type="submit">Импортировать</button></div>
+          </form>
+        </div>
+        <aside class="how-it-works" aria-label="Как проходит аудит">
+          <h2>Что будет дальше</h2>
+          <ol>
+            <li><b>Проверка</b><span>Сначала исходный проект должен пройти тесты.</span></li>
+            <li><b>Мутации</b><span>Движок ищет три изменения, которые тесты действительно замечают.</span></li>
+            <li><b>Защита</b><span>Студент исправляет код; аудитор видит результат и объяснения.</span></li>
+          </ol>
+          <p>Здесь обе роли показаны в одном окне только для ручной проверки. Права доступа проверяет сервер.</p>
+        </aside>
+      </section>
+
+      <section id="audit" hidden aria-labelledby="audit-heading">
+        <div class="session-header">
+          <div><span class="small-label">Текущая сессия</span><h2 id="audit-heading">Рабочая область</h2><p id="session-id" class="session-id"></p></div>
+          <div class="session-actions"><div id="countdown" class="countdown" role="timer" aria-label="Осталось времени">10:00</div><button id="new-audit" class="button subtle" type="button">Новый аудит</button></div>
+        </div>
+
+        <div class="workspace">
+          <section class="student-panel" aria-labelledby="student-heading">
+            <div class="panel-heading"><div><span class="small-label">Студент</span><h3 id="student-heading">Исправить код</h3></div><span id="editor-state" class="chip">Ожидает старта</span></div>
+            <div class="editor-toolbar"><label for="file-select">Файл</label><select id="file-select"></select><span id="dirty-indicator" class="dirty" hidden>Есть несохранённые правки</span></div>
+            <textarea id="code-editor" class="code-editor" spellcheck="false" aria-label="Код выбранного файла" disabled></textarea>
+            <div class="editor-actions"><button id="save-code" class="button secondary" type="button" disabled>Сохранить правку</button><button id="run-tests" class="button primary" type="button" disabled>Запустить тесты</button></div>
+            <div class="test-output"><div class="output-heading"><h4>Результат тестов</h4><span id="test-result-label">Ещё не запускались</span></div><pre id="test-log">После старта защиты здесь появится вывод go test.</pre></div>
+            <form id="note-form" class="note-form"><label for="note-text">Объяснить найденную ошибку</label><textarea id="note-text" rows="3" placeholder="Что сломалось, почему и как исправили?" disabled></textarea><div class="note-actions"><label for="note-line">Строка (необязательно)</label><input id="note-line" type="number" min="1" inputmode="numeric" placeholder="№" disabled><button id="record-note" class="button secondary" type="submit" disabled>Записать объяснение</button></div></form>
+            <button id="finish-audit" class="button subtle end-button" type="button" disabled>Завершить защиту</button>
+          </section>
+
+          <aside class="auditor-panel" aria-labelledby="auditor-heading">
+            <div class="panel-heading"><div><span class="small-label">Аудитор</span><h3 id="auditor-heading">Экран аудитора</h3></div><span class="chip private">Карта мутаций</span></div>
+            <p class="auditor-hint">Студенческий API не выдаёт эти сведения. Здесь они видны, чтобы проверить сценарий одному человеку.</p>
+            <div class="auditor-actions"><button id="start-audit" class="button primary" type="button">Начать 10 минут</button><button id="refresh-audit" class="button secondary" type="button">Обновить данные</button></div>
+            <h4>Что изменено</h4><div id="mutation-list" class="mutation-list"></div>
+            <h4>Ход защиты</h4><div id="event-list" class="event-list"><p class="muted">Действий пока нет.</p></div>
+          </aside>
+        </div>
+
+        <section id="report-panel" class="report-panel" hidden aria-labelledby="report-heading">
+          <div class="panel-heading"><div><span class="small-label">После защиты</span><h2 id="report-heading">Результат для обсуждения</h2></div><button id="download-report" class="button secondary" type="button">Скачать JSON</button></div>
+          <p>Тесты показывают поведение в пределах покрытия. Понимание кода оценивает аудитор после разговора со студентом.</p>
+          <div id="report-content"></div>
+        </section>
+      </section>
+    </main>
+    <footer>Локальный тестовый стенд · Go-код запускается только в Docker · Сессия хранится до перезапуска сервера</footer>
+  </div>
+</body>
+</html>

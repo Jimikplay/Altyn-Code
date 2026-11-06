@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Три направления — Live Code Audit</title>
+  <style>
+    :root{--ink:#182737;--muted:#526474;--line:#d7dfe5;--paper:#f3f6f7;--white:#fff;--blue:#2559a6;font:16px/1.5 "Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--paper)}
+    *{box-sizing:border-box}body{margin:0}a{color:inherit}a:focus-visible,button:focus-visible{outline:3px solid #bb5b31;outline-offset:3px}
+    .wrap{max-width:1500px;margin:0 auto;padding:0 clamp(18px,3.5vw,55px)}
+    .top{display:flex;align-items:center;gap:15px;min-height:72px;border-bottom:1px solid var(--line)}.mark{background:var(--ink);color:#fff;font:700 15px Consolas,monospace;border-radius:5px;padding:8px}.top strong{font-weight:800;letter-spacing:-.03em}.top small{margin-left:auto;font-size:12px;color:var(--muted)}
+    .hero{padding:42px 0 30px;display:flex;align-items:end;gap:30px;justify-content:space-between}h1{font-size:clamp(30px,3.8vw,56px);letter-spacing:-.055em;line-height:1.05;margin:8px 0 13px;max-width:800px}.hero p{color:var(--muted);max-width:690px;margin:0}.tag{font-size:12px;font-weight:750;color:var(--blue)}
+    .guide{padding:13px 16px;border-left:3px solid var(--blue);background:#e8eef4;color:#294257;font-size:13px;max-width:380px;flex:0 0 320px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:19px;margin:12px 0 38px}.card{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;min-width:0;display:flex;flex-direction:column}.thumb{display:block;aspect-ratio:1.56;background:#dde5e8;overflow:hidden}.thumb img{width:100%;height:100%;object-fit:cover;object-position:top left;transition:transform .22s ease}.thumb:hover img{transform:scale(1.03)}.body{padding:21px 22px 23px;display:flex;flex-direction:column;flex:1}.num{display:flex;align-items:center;gap:8px;font:700 12px Consolas,monospace;color:var(--muted)}.swatch{width:12px;height:12px;border-radius:50%;background:#f3a45d;box-shadow:0 0 0 3px #1b2a35}.case .swatch{background:#254cc2;box-shadow:0 0 0 3px #f4f7fc}.studio .swatch{background:#dffb68;box-shadow:0 0 0 3px #2945ec}h2{font-size:23px;line-height:1.14;letter-spacing:-.03em;margin:13px 0 8px}.desc{font-size:14px;line-height:1.55;color:var(--muted);margin:0 0 18px}.strengths{border-top:1px solid var(--line);padding-top:15px;margin:0 0 22px;list-style:none;display:grid;gap:7px;font-size:12px;color:var(--ink)}.strengths li:before{content:"— ";color:var(--blue);font-weight:bold}.card-actions{display:flex;gap:12px;align-items:center;margin-top:auto}.open{display:inline-block;padding:10px 14px;border-radius:4px;background:var(--ink);color:#fff;font-weight:750;font-size:13px;text-decoration:none}.open:hover{background:var(--blue)}.letter{font-size:12px;color:var(--muted)}
+    .bottom{border-top:1px solid var(--line);padding:18px 0 40px;color:var(--muted);display:flex;gap:20px;justify-content:space-between;font-size:13px}.bottom a{color:var(--blue)}
+    @media(max-width:1000px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{display:block}.guide{margin-top:22px}}
+    @media(max-width:650px){.top small{display:none}.grid{grid-template-columns:1fr}.thumb{aspect-ratio:1.85}.bottom{flex-direction:column}}
+    @media(prefers-reduced-motion:reduce){.thumb img{transition:none}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top"><span class="mark" aria-hidden="true">{≠}</span><strong>Live Code Audit</strong><small>Три направления интерфейса · выбор до разработки</small></header>
+    <main>
+      <section class="hero" aria-labelledby="title"><div><span class="tag">ВИЗУАЛЬНЫЕ КОНЦЕПТЫ / GO P2P-АУДИТ</span><h1 id="title">Один сценарий. Три разных характера.</h1><p>Откройте каждый вариант целиком: макеты интерактивны, но работают на демонстрационных данных. После выбора подключим подходящий интерфейс к настоящему бэкенду.</p></div><aside class="guide">Бэкенд на <strong>127.0.0.1:4183</strong> работает отдельно. Здесь только визуальные прототипы — не настоящие Go-тесты.</aside></section>
+      <section class="grid" aria-label="Варианты дизайна">
+        <article class="card control"><a class="thumb" href="control-room.html" target="_blank" rel="noopener" aria-label="Открыть полный вариант A — Пульт защиты"><img src="control-room-preview.png" alt="Тёмный трёхколоночный пульт: файлы, редактор, экран аудитора"></a><div class="body"><span class="num"><span class="swatch" aria-hidden="true"></span> ВАРИАНТ A</span><h2>Пульт защиты</h2><p class="desc">Плотное рабочее место для тех, кто живёт в коде. Тёмная поверхность, контрольные сигналы, тесты и история в одном экране.</p><ul class="strengths"><li>Код и журнал всегда рядом</li><li>Удобно для опытного аудитора</li><li>Спокойный технический характер</li></ul><div class="card-actions"><a class="open" href="control-room.html" target="_blank" rel="noopener">Открыть A</a><span class="letter">Тёмный / инструментальный</span></div></div></article>
+        <article class="card case"><a class="thumb" href="case-file.html" target="_blank" rel="noopener" aria-label="Открыть полный вариант B — Дело и улики"><img src="case-file-preview.png" alt="Светлый редакционный лист с реестром изменений и заметками аудитора"></a><div class="body"><span class="num"><span class="swatch" aria-hidden="true"></span> ВАРИАНТ B</span><h2>Дело и улики</h2><p class="desc">Каждая мутация — запись в деле, каждое исправление — аргумент. Светлый лист, синие ориентиры и красные пометки.</p><ul class="strengths"><li>Легко объяснить процесс на защите</li><li>Отчёт выглядит как доказательство</li><li>Редакционный, вдумчивый тон</li></ul><div class="card-actions"><a class="open" href="case-file.html" target="_blank" rel="noopener">Открыть B</a><span class="letter">Светлый / документный</span></div></div></article>
+        <article class="card studio"><a class="thumb" href="studio.html" target="_blank" rel="noopener" aria-label="Открыть полный вариант C — Лаборатория"><img src="studio-preview.png" alt="Яркая учебная лаборатория с крупным таймером, редактором и подсказками тестов"></a><div class="body"><span class="num"><span class="swatch" aria-hidden="true"></span> ВАРИАНТ C</span><h2>Лаборатория</h2><p class="desc">Задача как короткий интенсив: смелый цвет, большой таймер и понятные шаги для студента, без ощущения экзамена.</p><ul class="strengths"><li>Сильный первый экран и onboarding</li><li>Дружелюбнее новым студентам</li><li>История защит и SHA-256 для каждого теста</li></ul><div class="card-actions"><a class="open" href="studio.html" target="_blank" rel="noopener">Открыть C</a><span class="letter">Яркий / образовательный</span></div></div></article>
+      </section>
+    </main>
+    <footer class="bottom"><span>Напиши в чате <strong>A, B или C</strong>, либо скажи, что смешать из вариантов.</span><a href="http://127.0.0.1:4183/" target="_blank" rel="noopener">Вернуться к рабочему бэкенду</a></footer>
+  </div>
+</body>
+</html>

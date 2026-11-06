@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Дело № 031 — Live Code Audit / концепт</title>
+  <style>
+    :root {
+      --paper: #f4f7fc;
+      --leaf: #fff;
+      --ink: #172747;
+      --quiet: #57657c;
+      --cobalt: #254cc2;
+      --cobalt-light: #edf2ff;
+      --red: #bb382d;
+      --red-light: #fff0ed;
+      --rule: #cbd5e5;
+      --rule-soft: #e5ebf4;
+      --good: #176b55;
+      --serif: Georgia, "Times New Roman", serif;
+      --sans: "Segoe UI", Arial, sans-serif;
+      --mono: Consolas, "Lucida Console", monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 var(--sans); }
+    button, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .5; }
+    :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 3px; }
+    [hidden] { display: none !important; }
+    .page { max-width: 1520px; padding: 0 clamp(18px, 3.4vw, 56px) 88px; margin: 0 auto; }
+    .masthead { min-height: 88px; display: flex; align-items: center; gap: 22px; border-bottom: 1px solid var(--ink); }
+    .wordmark { font-family: var(--serif); font-size: 23px; line-height: 1; letter-spacing: -.055em; white-space: nowrap; }
+    .wordmark b { color: var(--cobalt); font-weight: normal; }
+    .masthead-note { border-left: 1px solid var(--rule); padding-left: 19px; color: var(--quiet); font-size: 12px; max-width: 260px; line-height: 1.35; }
+    .masthead-right { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 12px; }
+    .masthead-right span { white-space: nowrap; }
+    .concept-flag { border: 1px solid var(--cobalt); padding: 7px 10px; color: var(--cobalt); font-weight: 650; max-width: 240px; line-height: 1.3; }
+    .masthead-right .concept-flag { white-space: normal; }
+    .hero { padding: clamp(28px, 4.2vw, 62px) 0 32px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 35px; }
+    .folio { display: flex; align-items: center; gap: 11px; color: var(--cobalt); font-weight: 700; font-size: 13px; }
+    .folio::before { content: ""; width: 28px; height: 2px; background: var(--cobalt); }
+    h1 { margin: 15px 0 15px; font: normal clamp(43px, 5.2vw, 78px)/.99 var(--serif); letter-spacing: -.065em; max-width: 920px; text-wrap: balance; }
+    .hero-desc { margin: 0; max-width: 670px; color: var(--quiet); font-size: 16px; line-height: 1.65; }
+    .hero-stamp { border: 2px solid var(--red); color: var(--red); min-width: 174px; padding: 16px 20px 12px; transform: rotate(-5deg); font-family: var(--serif); font-size: 20px; line-height: 1.08; text-align: center; letter-spacing: -.04em; }
+    .hero-stamp small { display: block; font: 600 10px/1.4 var(--sans); letter-spacing: .08em; margin-top: 8px; }
+    .control-bar { background: var(--leaf); border: 1px solid var(--rule); border-top: 3px solid var(--cobalt); display: grid; grid-template-columns: minmax(160px, 1fr) auto auto; align-items: center; gap: 20px; padding: 16px 20px; }
+    .control-state { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .state-icon { width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--cobalt); box-shadow: 0 0 0 4px var(--cobalt-light); }
+    .state-icon.active { background: var(--red); box-shadow: 0 0 0 4px var(--red-light); }
+    .state-icon.finished { background: var(--good); box-shadow: 0 0 0 4px #ebf7f1; }
+    .control-state strong { display: block; font-size: 14px; }
+    .control-state small { display: block; color: var(--quiet); font-size: 12px; }
+    .clock { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; border-left: 1px solid var(--rule); padding-left: 22px; }
+    .clock time { font: normal 30px/1 var(--serif); letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+    .clock span { color: var(--quiet); font-size: 12px; }
+    .actions { display: flex; gap: 9px; flex-wrap: wrap; }
+    .button { border: 1px solid var(--ink); background: transparent; color: var(--ink); border-radius: 2px; min-height: 42px; padding: 8px 15px; font-size: 13px; font-weight: 700; line-height: 1.2; }
+    .button:hover:not(:disabled) { background: var(--cobalt-light); }
+    .button-primary { background: var(--cobalt); color: #fff; border-color: var(--cobalt); }
+    .button-primary:hover:not(:disabled) { background: #17399e; }
+    .button-quiet { border-color: var(--rule); }
+    .button-red { border-color: var(--red); color: var(--red); }
+    .button-red:hover:not(:disabled) { background: var(--red-light); }
+    .case-meta { display: flex; flex-wrap: wrap; gap: 7px 27px; padding: 16px 0 22px; border-bottom: 1px solid var(--rule); color: var(--quiet); font-size: 12px; }
+    .case-meta strong { color: var(--ink); font-weight: 650; }
+    .roles { display: flex; gap: 0; align-items: center; justify-content: space-between; padding: 24px 0 17px; }
+    .roles-label { color: var(--quiet); font-size: 13px; }
+    .role-switch { display: flex; padding: 3px; border: 1px solid var(--rule); background: #eaf0fa; }
+    .role-switch button { border: 0; background: transparent; color: var(--quiet); padding: 8px 14px; font-size: 13px; font-weight: 650; }
+    .role-switch button[aria-pressed="true"] { background: var(--leaf); color: var(--cobalt); box-shadow: 0 1px 4px #1d31591b; }
+    .workspace { display: grid; grid-template-columns: minmax(195px, .9fr) minmax(0, 2.5fr) minmax(215px, 1.03fr); border: 1px solid var(--rule); background: var(--leaf); min-height: 560px; }
+    .index-panel { padding: 25px 0 26px; background: #f8faff; border-right: 1px solid var(--rule); min-width: 0; }
+    .panel-title { margin: 0; padding: 0 22px; font-size: 13px; font-weight: 750; }
+    .panel-intro { padding: 0 22px; color: var(--quiet); font-size: 12px; margin: 7px 0 23px; line-height: 1.5; }
+    .evidence-list { list-style: none; margin: 0; padding: 0; }
+    .evidence-button { display: block; width: 100%; border: 0; border-left: 3px solid transparent; border-bottom: 1px solid var(--rule-soft); padding: 16px 20px; text-align: left; background: transparent; color: var(--ink); }
+    .evidence-button:first-child { border-top: 1px solid var(--rule-soft); }
+    .evidence-button[aria-current="true"] { background: var(--leaf); border-left-color: var(--red); }
+    .evidence-button:hover { background: var(--cobalt-light); }
+    .evidence-num { display: block; font-size: 11px; color: var(--cobalt); font-weight: 750; margin-bottom: 6px; }
+    .evidence-name { display: block; font: normal 21px/1.1 var(--serif); letter-spacing: -.03em; }
+    .evidence-delta { display: block; margin-top: 7px; color: var(--red); font: 12px/1.5 var(--mono); }
+    .index-foot { border-top: 1px solid var(--rule); margin: 25px 22px 0; padding-top: 17px; color: var(--quiet); font-size: 12px; line-height: 1.55; }
+    .student-note { margin: 0 19px; border-left: 2px solid var(--cobalt); padding: 9px 13px; color: var(--quiet); font-size: 13px; line-height: 1.65; }
+    .document-panel { min-width: 0; padding: 25px 0 31px; }
+    .document-head { display: flex; align-items: start; justify-content: space-between; gap: 15px; margin: 0 27px 22px; }
+    .document-head h2 { margin: 0 0 4px; font: normal 25px/1.2 var(--serif); letter-spacing: -.04em; }
+    .document-head p { margin: 0; color: var(--quiet); font-size: 12px; }
+    .file-label { border: 1px solid var(--rule); padding: 5px 9px; color: var(--quiet); font: 12px var(--mono); white-space: nowrap; }
+    .code-paper { margin: 0 27px; border: 1px solid var(--rule); min-width: 0; }
+    .code-header { display: flex; justify-content: space-between; gap: 10px; padding: 10px 15px; border-bottom: 1px solid var(--rule); color: var(--quiet); font: 12px var(--mono); }
+    .code-scroll { overflow-x: auto; padding: 12px 0 20px; min-height: 250px; }
+    .code-line { display: flex; width: max-content; min-width: 100%; white-space: pre; font: 13px/2.35 var(--mono); }
+    .code-line.selected { background: #eef3ff; }
+    .line-no { width: 44px; flex: 0 0 44px; padding-right: 13px; text-align: right; color: #8190a7; user-select: none; border-right: 1px solid var(--rule-soft); }
+    .selected .line-no { border-right: 2px solid var(--cobalt); color: var(--cobalt); }
+    .code-text { padding: 0 16px; }
+    .code-text mark { color: var(--red); background: var(--red-light); border-bottom: 2px solid var(--red); padding: 2px 0; font-weight: 700; }
+    .code-caption { margin: 10px 27px 0; color: var(--quiet); font-size: 12px; line-height: 1.55; }
+    .editor-label { display: block; font-size: 13px; font-weight: 750; margin: 17px 27px 7px; }
+    .editor { display: block; width: calc(100% - 54px); min-height: 225px; margin: 0 27px; padding: 16px; border: 1px solid var(--cobalt); border-radius: 2px; color: var(--ink); background: #fdfefe; resize: vertical; font: 13px/1.85 var(--mono); tab-size: 2; }
+    .editor-actions { display: flex; gap: 9px; flex-wrap: wrap; margin: 14px 27px 0; }
+    .document-footer { display: flex; gap: 9px; flex-wrap: wrap; margin: 23px 27px 0; }
+    .edit-hint { margin: 14px 27px 0; color: var(--quiet); font-size: 12px; }
+    .margin-panel { border-left: 1px solid var(--rule); padding: 25px 21px; min-width: 0; display: flex; flex-direction: column; }
+    .margin-panel h2 { margin: 0; font: normal 22px/1.2 var(--serif); letter-spacing: -.04em; }
+    .margin-kicker { margin: 5px 0 29px; font-size: 12px; color: var(--quiet); }
+    .annotation { border-left: 2px solid var(--red); padding: 2px 0 3px 15px; }
+    .annotation-ref { font: 700 11px/1.4 var(--sans); color: var(--red); }
+    .annotation-title { margin: 12px 0 7px; font: normal 21px/1.22 var(--serif); }
+    .annotation-body { color: var(--quiet); font-size: 13px; margin: 0; line-height: 1.65; }
+    .proof-slip { border-top: 1px solid var(--rule); margin-top: auto; padding-top: 18px; font-size: 12px; }
+    .proof-slip strong { display: block; color: var(--cobalt); margin-bottom: 6px; }
+    .proof-slip span { color: var(--quiet); }
+    .beneath { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr); gap: 22px; margin-top: 24px; }
+    .findings, .explanation, .report { background: var(--leaf); border: 1px solid var(--rule); padding: 24px 26px; min-width: 0; }
+    .section-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+    .section-top h2 { margin: 0; font: normal 26px/1.2 var(--serif); letter-spacing: -.04em; }
+    .section-top span { color: var(--quiet); font-size: 12px; text-align: right; }
+    .finding-list { margin: 0; padding: 0; list-style: none; }
+    .finding-row { display: flex; align-items: baseline; gap: 12px; padding: 12px 0; border-top: 1px solid var(--rule-soft); font-size: 13px; }
+    .finding-row:last-child { border-bottom: 1px solid var(--rule-soft); }
+    .finding-status { flex: 0 0 66px; font-size: 11px; font-weight: 750; color: var(--red); }
+    .finding-row.passed .finding-status { color: var(--good); }
+    .finding-name { font: 12px var(--mono); min-width: 0; overflow-wrap: anywhere; }
+    .finding-detail { margin-left: auto; color: var(--quiet); font-size: 12px; text-align: right; }
+    .findings-foot { margin: 13px 0 0; color: var(--quiet); font-size: 12px; line-height: 1.55; }
+    .explanation p { color: var(--quiet); font-size: 13px; line-height: 1.6; margin: 0 0 14px; }
+    .explanation textarea { display: block; min-height: 110px; width: 100%; border: 1px solid var(--rule); border-radius: 2px; padding: 11px 12px; resize: vertical; color: var(--ink); background: #fcfdff; font-size: 13px; line-height: 1.55; }
+    .explanation textarea:disabled { color: var(--quiet); background: var(--paper); }
+    .note-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    .save-message { color: var(--good); font-size: 12px; }
+    .report { margin-top: 24px; border-top: 3px solid var(--cobalt); }
+    .report-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin: 15px 0 21px; }
+    .report-figure { border-top: 1px solid var(--rule); padding-top: 10px; }
+    .report-figure strong { display: block; font: normal 27px/1.15 var(--serif); }
+    .report-figure span { display: block; margin-top: 4px; font-size: 12px; color: var(--quiet); }
+    .report-quote { margin: 0; padding: 14px 17px; background: var(--cobalt-light); border-left: 2px solid var(--cobalt); font: normal 16px/1.6 var(--serif); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .report-foot { color: var(--quiet); font-size: 12px; margin: 15px 0 0; }
+    .page-footer { display: flex; justify-content: space-between; gap: 15px; border-top: 1px solid var(--ink); padding: 15px 0 0; margin-top: 37px; color: var(--quiet); font-size: 12px; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    @media (max-width: 1150px) {
+      .workspace { grid-template-columns: minmax(175px, .85fr) minmax(0, 2.3fr); }
+      .margin-panel { grid-column: 2; border-left: 0; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 150px 1fr; gap: 0 17px; }
+      .margin-panel h2 { grid-column: 1; }
+      .margin-kicker { grid-column: 1; }
+      .annotation { grid-column: 2; grid-row: 1 / 3; }
+      .proof-slip { grid-column: 1 / -1; margin-top: 18px; }
+    }
+    @media (max-width: 790px) {
+      .masthead { flex-wrap: wrap; padding: 17px 0; min-height: 0; }
+      .masthead-right { flex-wrap: wrap; gap: 7px 16px; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-stamp { justify-self: start; transform: rotate(-3deg); }
+      .control-bar { grid-template-columns: 1fr auto; }
+      .actions { grid-column: 1 / -1; }
+      .workspace { grid-template-columns: 1fr; }
+      .index-panel { border-right: 0; border-bottom: 1px solid var(--rule); }
+      .evidence-list { display: grid; grid-template-columns: repeat(3, 1fr); }
+      .evidence-button { border-top: 1px solid var(--rule-soft); border-right: 1px solid var(--rule-soft); min-height: 112px; }
+      .index-foot { margin-top: 14px; }
+      .margin-panel { grid-column: 1; }
+      .beneath { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 520px) {
+      .page { padding: 0 16px 60px; }
+      .masthead-note { display: none; }
+      .masthead-right { width: 100%; margin-left: 0; justify-content: space-between; }
+      h1 { font-size: clamp(42px, 11vw, 58px); }
+      .hero { gap: 22px; }
+      .hero-stamp { font-size: 17px; padding: 10px 15px; min-width: 0; }
+      .control-bar { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+      .clock { border-left: 0; border-top: 1px solid var(--rule); padding: 12px 0 0; }
+      .actions .button { flex: 1 1 120px; }
+      .roles { align-items: start; gap: 9px; flex-direction: column; }
+      .role-switch { width: 100%; }
+      .role-switch button { flex: 1; }
+      .index-panel { padding: 18px 0; }
+      .panel-intro { margin-bottom: 15px; }
+      .evidence-list { grid-template-columns: 1fr; }
+      .evidence-button { min-height: 0; padding: 10px 19px; }
+      .evidence-name { font-size: 18px; }
+      .evidence-delta { margin-top: 3px; }
+      .document-head { margin: 0 17px 18px; }
+      .document-head h2 { font-size: 22px; }
+      .code-paper { margin: 0 13px; }
+      .code-caption, .edit-hint { margin-left: 17px; margin-right: 17px; }
+      .editor-label { margin-left: 17px; }
+      .editor { width: calc(100% - 34px); margin: 0 17px; }
+      .editor-actions, .document-footer { margin-left: 17px; margin-right: 17px; }
+      .margin-panel { display: block; padding: 20px; }
+      .margin-kicker { margin-bottom: 16px; }
+      .proof-slip { margin-top: 20px; }
+      .findings, .explanation, .report { padding: 20px 17px; }
+      .finding-row { flex-wrap: wrap; gap: 2px 10px; }
+      .finding-status { flex-basis: 65px; }
+      .finding-detail { flex: 1 1 100%; margin-left: 75px; text-align: left; }
+      .report-grid { grid-template-columns: 1fr; gap: 11px; }
+      .page-footer { flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="masthead">
+      <div class="wordmark">Live Code <b>Audit</b></div>
+      <div class="masthead-note">Исходный код как улика. Исправление как аргумент.</div>
+      <div class="masthead-right">
+        <span>Реестр / дело № G–031</span>
+        <span class="concept-flag">Дизайн-концепт — данные для просмотра</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="case-title">
+        <div>
+          <div class="folio">Дело № G–031 / Go</div>
+          <h1 id="case-title">Три строки, которые меняют смысл.</h1>
+          <p class="hero-desc">Аудитор подготовил три проверяемые мутации в учебном Go-проекте. У студента десять минут, чтобы разобраться в поведении кода, исправить его и объяснить решение.</p>
+        </div>
+        <div class="hero-stamp" aria-hidden="true">3 изменения<br>в деле<small>sample.go / 03 строки</small></div>
+      </section>
+
+      <section class="control-bar" aria-label="Управление защитой">
+        <div class="control-state">
+          <span class="state-icon" id="stateIcon" aria-hidden="true"></span>
+          <div><strong id="phaseTitle">Дело подготовлено</strong><small id="phaseText">Аудитор может открыть десятиминутную защиту.</small></div>
+        </div>
+        <div class="clock"><time id="timer" datetime="PT10M">10:00</time><span id="timerCaption">отведено на защиту</span></div>
+        <div class="actions">
+          <button class="button button-primary" id="startButton" type="button">Начать защиту</button>
+          <button class="button button-red" id="finishButton" type="button" hidden>Завершить защиту</button>
+        </div>
+      </section>
+      <div class="case-meta">
+        <span><strong>Материал</strong> example.com/audit-demo</span>
+        <span><strong>Язык</strong> Go 1.22</span>
+        <span><strong>Файлы</strong> sample.go, sample_test.go</span>
+        <span><strong>Исходная проверка</strong> 3 из 3 пройдены</span>
+      </div>
+
+      <section aria-label="Рабочее место">
+        <div class="roles">
+          <span class="roles-label">Взгляд на дело: разные права доступа у двух ролей</span>
+          <div class="role-switch" role="group" aria-label="Выбрать роль для просмотра">
+            <button type="button" id="auditorRole" aria-pressed="true">Аудитор</button>
+            <button type="button" id="studentRole" aria-pressed="false">Студент</button>
+          </div>
+        </div>
+        <div class="workspace">
+          <aside class="index-panel" aria-labelledby="evidenceTitle">
+            <h2 class="panel-title" id="evidenceTitle">Реестр изменений</h2>
+            <p class="panel-intro" id="indexIntro">Три мутации подтверждены отдельными тестами.</p>
+            <div id="auditorIndex">
+              <ol class="evidence-list">
+                <li><button class="evidence-button" type="button" data-case="0" aria-current="true"><span class="evidence-num">Запись 01 / строка 03</span><span class="evidence-name">Eligible</span><span class="evidence-delta">&gt;= → &gt;</span></button></li>
+                <li><button class="evidence-button" type="button" data-case="1" aria-current="false"><span class="evidence-num">Запись 02 / строка 04</span><span class="evidence-name">CanEnter</span><span class="evidence-delta">&amp;&amp; → ||</span></button></li>
+                <li><button class="evidence-button" type="button" data-case="2" aria-current="false"><span class="evidence-num">Запись 03 / строка 05</span><span class="evidence-name">Remaining</span><span class="evidence-delta">- → +</span></button></li>
+              </ol>
+              <p class="index-foot">Выберите запись, чтобы увидеть связанную строку и замечание аудитора.</p>
+            </div>
+            <p class="student-note" id="studentIndex" hidden>Карта мутаций доступна аудитору. Вам виден изменённый файл; восстановите смысл функций и подтвердите исправления тестами.</p>
+          </aside>
+
+          <section class="document-panel" aria-labelledby="documentTitle">
+            <div class="document-head"><div><h2 id="documentTitle">Рабочий экземпляр</h2><p id="documentSubtitle">Файл с внесёнными изменениями, до исправления студентом.</p></div><span class="file-label">sample.go</span></div>
+            <div class="code-paper" id="readOnlyCode">
+              <div class="code-header"><span>sample.go</span><span id="codeState">изменённая версия</span></div>
+              <div class="code-scroll" id="codeLines" role="img" aria-label="Код файла sample.go"></div>
+            </div>
+            <p class="code-caption" id="codeCaption">Строки 03–05 сопоставлены с реестром. Красная метка указывает на изменённый оператор.</p>
+            <label class="editor-label" for="sourceEditor" id="editorLabel" hidden>Редактирование sample.go</label>
+            <textarea id="sourceEditor" class="editor" spellcheck="false" aria-describedby="editInstruction" hidden></textarea>
+            <div class="editor-actions" id="editorActions" hidden>
+              <button class="button button-primary" type="button" id="saveCode">Сохранить правки</button>
+              <button class="button button-quiet" type="button" id="cancelEdit">Отменить</button>
+            </div>
+            <p class="edit-hint" id="editInstruction">Студент может редактировать только sample.go. Тестовый файл остаётся неизменным.</p>
+            <div class="document-footer">
+              <button class="button button-quiet" type="button" id="editButton" hidden>Редактировать файл</button>
+              <button class="button button-primary" type="button" id="runButton" hidden>Запустить тесты</button>
+            </div>
+          </section>
+
+          <aside class="margin-panel" id="marginPanel" aria-labelledby="annotationHeading">
+            <h2 id="annotationHeading">На полях</h2><p class="margin-kicker">Пометки аудитора к выбранной строке</p>
+            <div class="annotation"><span class="annotation-ref" id="annotationRef">ЗАПИСЬ 01 · sample.go:3</span><h3 class="annotation-title" id="annotationTitle">Граница стала исключением.</h3><p class="annotation-body" id="annotationBody">При score = 70 результат теперь false. Тест TestBoundary проверяет именно этот порог.</p></div>
+            <div class="proof-slip"><strong>Основание для проверки</strong><span id="annotationProof">TestBoundary: score 70 should be eligible</span></div>
+          </aside>
+        </div>
+      </section>
+
+      <div class="beneath">
+        <section class="findings" aria-labelledby="findingsTitle">
+          <div class="section-top"><h2 id="findingsTitle">Протокол тестов</h2><span id="findingsSource">Подтверждение мутаций</span></div>
+          <ul class="finding-list" id="findingsList" aria-live="polite"></ul>
+          <p class="findings-foot" id="findingsFoot">Каждая мутация была обнаружена отдельным тестом. После правок запустите проверку повторно.</p>
+        </section>
+        <section class="explanation" aria-labelledby="explanationTitle">
+          <div class="section-top"><h2 id="explanationTitle">Объяснение студента</h2><span>Запись в дело</span></div>
+          <p>Опишите, что было неверно и почему ваши изменения восстанавливают ожидаемое поведение.</p>
+          <label class="visually-hidden" for="studentNote">Объяснение исправлений</label>
+          <textarea id="studentNote" placeholder="Например: на границе 70 баллов Eligible должна возвращать true…" maxlength="2000" disabled></textarea>
+          <div class="note-actions"><button class="button button-quiet" id="saveNote" type="button" disabled>Сохранить объяснение</button><span class="save-message" id="saveMessage" role="status" aria-live="polite"></span></div>
+        </section>
+      </div>
+
+      <section class="report" id="report" aria-labelledby="reportTitle" hidden>
+        <div class="section-top"><h2 id="reportTitle">Итоговый лист дела</h2><span>Доступен аудитору после завершения</span></div>
+        <div class="report-grid">
+          <div class="report-figure"><strong id="reportTests">0 / 3</strong><span>тестов пройдено в итоговой проверке</span></div>
+          <div class="report-figure"><strong id="reportChanges">0 / 3</strong><span>исходных операторов восстановлено</span></div>
+          <div class="report-figure"><strong id="reportTime">00:00</strong><span>времени оставалось при завершении</span></div>
+        </div>
+        <blockquote class="report-quote" id="reportQuote">Объяснение не добавлено.</blockquote>
+        <p class="report-foot">Отчёт показывает наблюдаемые правки, тесты и объяснение. Вывод о понимании кода делает аудитор.</p>
+      </section>
+    </main>
+    <footer class="page-footer"><span>Live Code Audit / концепция «Дело и реестр улик»</span><span>Локальная демонстрация: действия не обращаются к серверу.</span></footer>
+  </div>
+  <script>
+    (() => {
+      'use strict';
+      const $ = (id) => document.getElementById(id);
+      const mutations = [
+        { line: 3, token: '> 70', title: 'Граница стала исключением.', body: 'При score = 70 результат теперь false. Тест TestBoundary проверяет именно этот порог.', proof: 'TestBoundary: score 70 should be eligible' },
+        { line: 4, token: '||', title: 'Одного условия теперь достаточно.', body: 'Неактивный пользователь с кредитами получает доступ. TestAccess фиксирует этот случай.', proof: 'TestAccess: inactive user cannot enter' },
+        { line: 5, token: '+ used', title: 'Остаток растёт вместо уменьшения.', body: 'Для total = 10 и used = 3 функция возвращает 13 вместо 7. Это ловит TestRemaining.', proof: 'TestRemaining: remaining credits should be 7' }
+      ];
+      const testNames = ['TestBoundary', 'TestAccess', 'TestRemaining'];
+      const testDetails = ['score 70 should be eligible', 'inactive user cannot enter', 'remaining credits should be 7'];
+      const initialSource = 'package sample\n\nfunc Eligible(score int) bool { return score > 70 }\nfunc CanEnter(active bool, credits int) bool { return active || credits > 0 }\nfunc Remaining(total, used int) int { return total + used }\n';
+      const state = { phase: 'ready', role: 'auditor', selected: 0, source: initialSource, editing: false, remaining: 600, deadline: 0, lastResults: [false, false, false], note: '', ranAfterEdit: false, savedAfterRun: false };
+      const pad = (n) => String(n).padStart(2, '0');
+      const clock = (seconds) => pad(Math.floor(seconds / 60)) + ':' + pad(seconds % 60);
+      const checkSource = (source) => [
+        /func\s+Eligible\s*\([^\n]*\)\s*bool\s*\{\s*return\s+score\s*>=\s*70\s*\}/.test(source),
+        /func\s+CanEnter\s*\([^\n]*\)\s*bool\s*\{\s*return\s+active\s*&&\s*credits\s*>\s*0\s*\}/.test(source),
+        /func\s+Remaining\s*\([^\n]*\)\s*int\s*\{\s*return\s+total\s*-\s*used\s*\}/.test(source)
+      ];
+
+      function renderCode() {
+        const list = $('codeLines');
+        list.replaceChildren();
+        const lines = state.source.replace(/\n$/, '').split('\n');
+        lines.forEach((line, index) => {
+          const row = document.createElement('div');
+          row.className = 'code-line' + (state.role === 'auditor' && index + 1 === mutations[state.selected].line ? ' selected' : '');
+          const number = document.createElement('span');
+          number.className = 'line-no';
+          number.textContent = pad(index + 1);
+          const text = document.createElement('span');
+          text.className = 'code-text';
+          const mutation = mutations.find((item) => item.line === index + 1);
+          const position = mutation && state.role === 'auditor' ? line.indexOf(mutation.token) : -1;
+          if (position >= 0) {
+            text.append(document.createTextNode(line.slice(0, position)));
+            const mark = document.createElement('mark');
+            mark.textContent = mutation.token;
+            text.append(mark, document.createTextNode(line.slice(position + mutation.token.length)));
+          } else {
+            text.textContent = line || ' ';
+          }
+          row.append(number, text);
+          list.append(row);
+        });
+        $('codeLines').setAttribute('aria-label', 'Содержимое sample.go: ' + state.source);
+        $('codeState').textContent = state.phase === 'ready' ? 'изменённая версия' : state.phase === 'finished' ? 'итоговая версия' : 'рабочая версия';
+      }
+
+      function renderFindings() {
+        const list = $('findingsList');
+        list.replaceChildren();
+        state.lastResults.forEach((passed, index) => {
+          const row = document.createElement('li');
+          row.className = 'finding-row' + (passed ? ' passed' : '');
+          const status = document.createElement('span');
+          status.className = 'finding-status';
+          status.textContent = passed ? 'ПРОЙДЕН' : 'ПРОВАЛЕН';
+          const name = document.createElement('span');
+          name.className = 'finding-name';
+          name.textContent = testNames[index];
+          const detail = document.createElement('span');
+          detail.className = 'finding-detail';
+          detail.textContent = passed ? 'ожидаемое поведение подтверждено' : testDetails[index];
+          row.append(status, name, detail);
+          list.append(row);
+        });
+        $('findingsSource').textContent = state.phase === 'ready' ? 'Подтверждение мутаций' : state.phase === 'finished' ? 'Итоговая проверка' : state.ranAfterEdit ? 'Последний пробный запуск' : 'Результат до правок';
+        $('findingsFoot').textContent = state.phase === 'ready'
+          ? 'Каждая мутация была обнаружена отдельным тестом. После правок запустите проверку повторно.'
+          : state.phase === 'finished'
+            ? 'Это локальная имитация проверки по трём примерам из demo.go; настоящий go test здесь не запускается.'
+            : state.savedAfterRun
+              ? 'Код изменился после последнего запуска. Запустите тесты снова, чтобы обновить протокол.'
+              : 'Локальная имитация результатов трёх тестов из sample_test.go; настоящий go test здесь не запускается.';
+      }
+
+      function render() {
+        const auditor = state.role === 'auditor';
+        const editingHere = state.editing && !auditor;
+        $('auditorRole').setAttribute('aria-pressed', String(auditor));
+        $('studentRole').setAttribute('aria-pressed', String(!auditor));
+        $('auditorIndex').hidden = !auditor;
+        $('studentIndex').hidden = auditor;
+        $('indexIntro').textContent = auditor ? 'Три мутации подтверждены отдельными тестами.' : 'Состав дела до завершения скрыт.';
+        $('marginPanel').hidden = !auditor;
+        $('documentTitle').textContent = auditor ? 'Рабочий экземпляр' : 'Файл студента';
+        $('documentSubtitle').textContent = state.phase === 'finished' ? 'Итоговое состояние файла на момент завершения.' : auditor ? 'Файл с внесёнными изменениями, до исправления студентом.' : 'Исправьте поведение функций и проверьте результат.';
+        $('codeCaption').textContent = auditor ? 'Строки 03–05 сопоставлены с реестром. Красная метка указывает на изменённый оператор.' : 'В режиме студента исходные мутации и замечания аудитора скрыты.';
+        $('startButton').hidden = state.phase !== 'ready' || !auditor;
+        $('finishButton').hidden = state.phase !== 'active';
+        $('editButton').hidden = auditor || state.phase !== 'active' || state.editing;
+        $('runButton').hidden = auditor || state.phase !== 'active' || state.editing;
+        $('editInstruction').hidden = auditor || state.phase !== 'active';
+        $('editorLabel').hidden = !editingHere;
+        $('sourceEditor').hidden = !editingHere;
+        $('editorActions').hidden = !editingHere;
+        $('readOnlyCode').hidden = editingHere;
+        $('codeCaption').hidden = editingHere;
+        $('studentNote').disabled = auditor || state.phase !== 'active';
+        $('saveNote').disabled = auditor || state.phase !== 'active';
+        $('timer').textContent = clock(state.remaining);
+        $('timer').setAttribute('datetime', 'PT' + state.remaining + 'S');
+        $('timerCaption').textContent = state.phase === 'ready' ? 'отведено на защиту' : state.phase === 'finished' ? 'осталось на момент закрытия' : 'осталось';
+        $('stateIcon').className = 'state-icon' + (state.phase === 'ready' ? '' : ' ' + state.phase);
+        $('phaseTitle').textContent = state.phase === 'ready' ? 'Дело подготовлено' : state.phase === 'active' ? 'Защита идёт' : 'Дело закрыто';
+        $('phaseText').textContent = state.phase === 'ready' ? 'Аудитор может открыть десятиминутную защиту.' : state.phase === 'active' ? 'Студент редактирует код и фиксирует объяснение.' : 'Итоговый лист сформирован для аудитора.';
+        document.querySelectorAll('[data-case]').forEach((button, index) => button.setAttribute('aria-current', String(index === state.selected)));
+        const selected = mutations[state.selected];
+        $('annotationRef').textContent = 'ЗАПИСЬ ' + pad(state.selected + 1) + ' · sample.go:' + selected.line;
+        $('annotationTitle').textContent = selected.title;
+        $('annotationBody').textContent = selected.body;
+        $('annotationProof').textContent = selected.proof;
+        $('report').hidden = state.phase !== 'finished' || !auditor;
+        renderCode();
+        renderFindings();
+      }
+
+      function stopEditing() {
+        state.editing = false;
+        $('sourceEditor').value = state.source;
+      }
+
+      function finish() {
+        if (state.phase !== 'active') return;
+        if (state.editing && $('sourceEditor').value.trim()) state.source = $('sourceEditor').value;
+        state.editing = false;
+        state.note = $('studentNote').value.slice(0, 2000);
+        state.phase = 'finished';
+        state.lastResults = checkSource(state.source);
+        $('reportTests').textContent = state.lastResults.filter(Boolean).length + ' / 3';
+        $('reportChanges').textContent = checkSource(state.source).filter(Boolean).length + ' / 3';
+        $('reportTime').textContent = clock(state.remaining);
+        $('reportQuote').textContent = state.note.trim() || 'Объяснение не добавлено.';
+        render();
+        if (state.role === 'auditor') $('report').scrollIntoView({ block: 'nearest' });
+      }
+
+      $('startButton').addEventListener('click', () => {
+        if (state.phase !== 'ready' || state.role !== 'auditor') return;
+        state.phase = 'active';
+        state.role = 'student';
+        state.deadline = Date.now() + 600000;
+        render();
+        $('editButton').focus();
+      });
+      $('finishButton').addEventListener('click', finish);
+      $('auditorRole').addEventListener('click', () => { state.role = 'auditor'; render(); });
+      $('studentRole').addEventListener('click', () => { state.role = 'student'; render(); });
+      document.querySelectorAll('[data-case]').forEach((button) => button.addEventListener('click', () => {
+        state.selected = Number(button.dataset.case);
+        render();
+      }));
+      $('editButton').addEventListener('click', () => {
+        if (state.phase !== 'active' || state.role !== 'student') return;
+        state.editing = true;
+        $('sourceEditor').value = state.source;
+        render();
+        $('sourceEditor').focus();
+      });
+      $('cancelEdit').addEventListener('click', () => { stopEditing(); render(); $('editButton').focus(); });
+      $('saveCode').addEventListener('click', () => {
+        const source = $('sourceEditor').value;
+        if (!source.trim()) { $('sourceEditor').setCustomValidity('Файл не может быть пустым.'); $('sourceEditor').reportValidity(); return; }
+        $('sourceEditor').setCustomValidity('');
+        state.source = source;
+        state.editing = false;
+        state.savedAfterRun = true;
+        render();
+        $('runButton').focus();
+      });
+      $('sourceEditor').addEventListener('input', () => $('sourceEditor').setCustomValidity(''));
+      $('runButton').addEventListener('click', () => {
+        if (state.phase !== 'active' || state.role !== 'student') return;
+        state.lastResults = checkSource(state.source);
+        state.ranAfterEdit = true;
+        state.savedAfterRun = false;
+        render();
+        $('findingsTitle').scrollIntoView({ block: 'nearest' });
+      });
+      $('saveNote').addEventListener('click', () => {
+        if (state.phase !== 'active' || state.role !== 'student') return;
+        state.note = $('studentNote').value.slice(0, 2000);
+        $('saveMessage').textContent = state.note.trim() ? 'Объяснение сохранено в макете.' : 'Пустая запись сохранена.';
+      });
+      $('studentNote').addEventListener('input', () => { $('saveMessage').textContent = ''; });
+      window.setInterval(() => {
+        if (state.phase !== 'active') return;
+        state.remaining = Math.max(0, Math.ceil((state.deadline - Date.now()) / 1000));
+        $('timer').textContent = clock(state.remaining);
+        $('timer').setAttribute('datetime', 'PT' + state.remaining + 'S');
+        if (state.remaining === 0) finish();
+      }, 500);
+      render();
+    })();
+  </script>
+</body>
+</html>

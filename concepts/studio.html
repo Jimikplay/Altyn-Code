@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Learning Studio — лаборатория мутаций Go</title>
+  <style>
+    :root {
+      --paper: #f6f7f2;
+      --white: #ffffff;
+      --ink: #192347;
+      --muted: #485474;
+      --blue: #2945ec;
+      --blue-dark: #182eae;
+      --lime: #dffb68;
+      --coral: #ff887b;
+      --line: #cdd2de;
+      --soft: #eef0f9;
+      --display: "Arial Black", "Trebuchet MS", Arial, sans-serif;
+      --body: "Trebuchet MS", Arial, sans-serif;
+      --code: Consolas, "Courier New", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--body); }
+    button, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .55; }
+    :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+    .hero :focus-visible, .blue-band :focus-visible { outline-color: var(--lime); }
+    .shell { width: min(100% - 64px, 1400px); margin-inline: auto; }
+    .topbar { background: var(--white); border-bottom: 1px solid var(--line); }
+    .topbar-inner { display: flex; justify-content: space-between; align-items: center; gap: 22px; min-height: 82px; }
+    .brand { display: flex; align-items: center; gap: 13px; font-family: var(--display); font-size: 17px; line-height: 1.05; letter-spacing: -.045em; }
+    .brand-mark { width: 36px; height: 36px; background: var(--blue); color: var(--lime); display: grid; place-items: center; border-radius: 10px 10px 3px 10px; transform: rotate(-8deg); font: 900 21px var(--body); }
+    .brand-mark span { transform: rotate(8deg); }
+    .top-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+    .demo-tag { border: 1px solid var(--blue); border-radius: 50px; color: var(--blue-dark); background: #f1f4ff; font-size: 13px; font-weight: 800; padding: 7px 13px; }
+    .reset { border: 0; background: transparent; color: var(--blue-dark); font-size: 14px; font-weight: 800; padding: 10px; text-decoration: underline; text-underline-offset: 4px; }
+    .history-link { min-height: 42px; padding: 7px 14px; border: 1.5px solid var(--blue); border-radius: 24px; background: var(--white); color: var(--blue-dark); font-weight: 900; font-size: 13px; }
+    .history-link:hover, .history-link[aria-expanded="true"] { background: var(--lime); }
+    .hash-caption { margin: 13px 0 0; font: 12px/1.5 var(--code); color: #e5ebff; overflow-wrap: anywhere; }
+    .hash-caption code { color: var(--lime); font: inherit; user-select: all; }
+    .history { margin-top: 32px; border: 2px solid var(--ink); border-radius: 16px; overflow: hidden; background: var(--white); }
+    .history-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 24px; color: var(--ink); background: var(--lime); }
+    .history-head h2 { margin: 0; font-size: clamp(23px, 3vw, 32px); }
+    .history-head p { margin: 0; font-size: 13px; max-width: 52ch; }
+    .history-body { padding: 10px 24px 24px; }
+    .history-defence { border-bottom: 1px solid var(--line); padding: 21px 0; }
+    .history-defence:last-child { border: 0; padding-bottom: 0; }
+    .history-defence h3 { font-size: 18px; margin: 0 0 6px; }
+    .history-meta { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+    .history-hash { display: block; font: 11px/1.65 var(--code); color: var(--blue-dark); overflow-wrap: anywhere; user-select: all; }
+    .history-run { border-left: 4px solid var(--blue); background: #f4f6ff; margin-top: 12px; padding: 11px 14px; }
+    .history-run summary { cursor: pointer; font-size: 14px; font-weight: 800; }
+    .history-run summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 4px; }
+    .history-run .history-hash { margin: 8px 0; }
+    .history-tests { list-style: none; padding: 0; margin: 10px 0 0; }
+    .history-tests li { border-top: 1px solid var(--line); padding: 10px 0; font-size: 13px; }
+    .history-tests li strong { display: block; margin-bottom: 4px; }
+    .history-tests li[data-state="pass"] strong { color: #27621f; }
+    .history-tests li[data-state="fail"] strong { color: #9a2727; }
+    .history-empty { padding: 17px 0; color: var(--muted); }
+
+    .hero { overflow: hidden; position: relative; isolation: isolate; background: var(--blue); color: var(--white); }
+    .hero::before { content: ""; position: absolute; width: 540px; height: 540px; border: 1px solid rgba(255,255,255,.27); border-radius: 50%; top: -320px; right: -65px; box-shadow: 0 0 0 52px rgba(255,255,255,.04), 0 0 0 105px rgba(255,255,255,.035); z-index: -1; }
+    .hero-inner { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(300px, .8fr); align-items: center; min-height: 368px; gap: 35px; padding-block: 48px 52px; }
+    .hero-copy { max-width: 650px; }
+    .hero-kicker { margin: 0 0 19px; font-weight: 800; font-size: 14px; }
+    h1 { font: 900 clamp(2.65rem, 5.3vw, 5.5rem)/.98 var(--display); letter-spacing: -.075em; margin: 0 0 18px; }
+    .hero-copy > p:last-child { max-width: 540px; font-size: clamp(16px, 1.5vw, 19px); margin: 0; color: #eef0ff; }
+    .challenge { justify-self: end; width: min(100%, 410px); position: relative; }
+    .challenge::after { content: ""; position: absolute; height: 46px; width: 46px; border-radius: 50% 50% 9px 50%; background: var(--coral); right: -22px; top: -18px; transform: rotate(25deg); }
+    .clock-face { background: var(--lime); color: var(--ink); padding: 22px 28px 28px; border-radius: 18px 18px 55px 18px; box-shadow: 13px 13px 0 #182cb4; }
+    .clock-label { font-size: 14px; font-weight: 900; margin: 0; }
+    .clock-value { display: block; font: 900 clamp(4.5rem, 8vw, 8.5rem)/1 var(--display); letter-spacing: -.115em; font-variant-numeric: tabular-nums; white-space: nowrap; margin: 7px 0 8px; }
+    .clock-caption { font-size: 14px; font-weight: 700; margin: 0; }
+    .start-button { display: block; width: 100%; margin-top: 23px; min-height: 55px; border: 2px solid var(--ink); border-radius: 12px; background: var(--coral); color: var(--ink); font-weight: 900; font-size: 17px; box-shadow: 5px 5px 0 #182cb4; }
+    .start-button:not(:disabled):hover { background: #ffb1a7; }
+    .start-button:disabled { opacity: 1; background: #fff; }
+
+    .flow { border-bottom: 1px solid var(--line); background: var(--white); }
+    .flow-inner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding-block: 19px; }
+    .flow-item { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 14px; font-weight: 800; }
+    .flow-item b { display: grid; flex: 0 0 28px; place-items: center; width: 28px; height: 28px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 14px; }
+    .flow-item[data-on="true"] { color: var(--blue-dark); }
+    .flow-item[data-on="true"] b { color: var(--white); background: var(--blue); border-color: var(--blue); }
+
+    main.shell { padding-block: 40px 76px; }
+    .view-nav { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 26px; }
+    .view-tabs { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+    .view-button { min-height: 46px; border: 1.5px solid var(--line); border-radius: 50px; background: var(--white); padding: 9px 19px; color: var(--ink); font-weight: 900; }
+    .view-button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--white); }
+    .view-button:not([aria-pressed="true"]):hover { border-color: var(--blue); color: var(--blue-dark); }
+    .role-note { margin: 0; font-size: 13px; color: var(--muted); text-align: right; max-width: 390px; }
+    [hidden] { display: none !important; }
+    h2 { font: 900 clamp(1.65rem, 2.5vw, 2.5rem)/1.12 var(--display); letter-spacing: -.055em; margin: 0 0 10px; }
+    h3 { font: 900 1.15rem/1.2 var(--display); letter-spacing: -.03em; margin: 0; }
+    .section-lead { margin: 0 0 25px; color: var(--muted); max-width: 66ch; }
+    .work-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .88fr); align-items: start; gap: 28px; }
+    .workspace { min-width: 0; }
+    .editor-box { background: var(--white); border: 1.5px solid var(--ink); border-radius: 16px; overflow: hidden; box-shadow: 6px 6px 0 #e0e4f3; }
+    .editor-top { padding: 14px 18px; background: var(--soft); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .editor-top strong { font-size: 14px; }
+    .language-tag { font: 800 12px var(--code); background: var(--lime); padding: 5px 9px; border-radius: 5px; white-space: nowrap; }
+    .file-tabs { display: flex; gap: 3px; overflow-x: auto; border-bottom: 1px solid var(--line); padding: 0 12px; scrollbar-width: thin; }
+    .file-tab { flex: none; background: transparent; border: 0; border-bottom: 3px solid transparent; min-height: 48px; padding: 11px 13px 9px; font: 700 13px var(--code); color: var(--muted); }
+    .file-tab[aria-pressed="true"] { border-color: var(--blue); color: var(--blue-dark); }
+    .file-tab:hover { color: var(--blue-dark); }
+    .editor-area { position: relative; background: #fcfcff; }
+    .editor-area::before { content: "01\A 02\A 03\A 04\A 05\A 06\A 07\A 08\A 09\A 10\A 11\A 12\A 13\A 14"; white-space: pre; position: absolute; top: 17px; left: 16px; color: #7a859f; line-height: 1.8; font: 14px/1.8 var(--code); pointer-events: none; }
+    #source { display: block; width: 100%; min-height: 288px; resize: vertical; padding: 17px 16px 18px 55px; border: 0; outline: 0; background: transparent; color: var(--ink); font: 14px/1.8 var(--code); tab-size: 4; white-space: pre; overflow: auto; }
+    #source:focus-visible { outline: 3px solid var(--blue); outline-offset: -4px; }
+    #source[readonly] { color: #465274; }
+    .editor-foot { display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); padding: 10px 18px; font-size: 13px; color: var(--muted); }
+    .editor-foot span { font-weight: 800; }
+    .run-row { display: flex; align-items: center; flex-wrap: wrap; gap: 13px; margin: 23px 0 0; }
+    .run-button, .save-button, .finish-button { min-height: 47px; border: 2px solid var(--ink); border-radius: 9px; padding: 10px 19px; font-weight: 900; }
+    .run-button { color: var(--white); background: var(--blue); }
+    .run-button:not(:disabled):hover { background: var(--blue-dark); }
+    .run-message { margin: 0; font-size: 14px; font-weight: 800; color: var(--muted); }
+    .simulation-note { margin: 11px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); max-width: 62ch; }
+
+    .clue-board { background: var(--white); border: 1.5px solid var(--line); border-radius: 16px; padding: 23px; }
+    .clue-intro { margin: 8px 0 20px; font-size: 14px; color: var(--muted); }
+    .clue { position: relative; padding: 16px 16px 16px 21px; border-left: 5px solid var(--blue); background: #f1f3ff; margin-top: 9px; }
+    .clue:nth-of-type(2) { border-color: var(--coral); background: #fff1ee; }
+    .clue:nth-of-type(3) { border-color: #bbdb27; background: #f5f9df; }
+    .clue-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 7px; flex-wrap: wrap; }
+    .clue-title strong { font: 800 13px var(--code); }
+    .clue-status { font-size: 12px; font-weight: 900; color: var(--blue-dark); white-space: nowrap; }
+    .clue-status[data-state="pass"] { color: #286220; }
+    .clue-status[data-state="fail"] { color: #a52424; }
+    .clue-status[data-state="unknown"] { color: #6b427c; }
+    .clue p { font-size: 14px; margin: 9px 0 0; line-height: 1.45; }
+    .clue code { font-family: var(--code); font-size: .94em; }
+    .clue-board .aside-end { padding-top: 17px; margin: 18px 0 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+
+    .explain { margin-top: 31px; border-top: 3px solid var(--ink); display: grid; grid-template-columns: minmax(170px, .55fr) minmax(0, 1fr); gap: 28px; padding-top: 24px; }
+    .explain-title { margin: 8px 0 0; color: var(--muted); font-size: 14px; max-width: 26ch; }
+    .explain-form label { display: block; font-weight: 900; margin-bottom: 8px; }
+    #explanation { display: block; width: 100%; min-height: 113px; resize: vertical; padding: 14px; border: 1.5px solid var(--ink); border-radius: 11px; background: var(--white); color: var(--ink); line-height: 1.5; }
+    #explanation::placeholder { color: #626d8b; }
+    #explanation:disabled { background: #f1f2f5; }
+    .explain-actions { margin-top: 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .save-button { background: var(--lime); color: var(--ink); }
+    .save-button:not(:disabled):hover { background: #c8f34b; }
+    .save-status { font-size: 13px; font-weight: 800; color: var(--muted); }
+    .finish-strip { margin-top: 35px; background: #e9edff; border: 1.5px solid #b8c4ff; border-radius: 14px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .finish-strip p { margin: 5px 0 0; color: var(--muted); font-size: 14px; }
+    .finish-button { background: var(--coral); color: var(--ink); white-space: nowrap; }
+    .finish-button:not(:disabled):hover { background: #ffb1a7; }
+
+    .auditor-head { background: var(--lime); border: 1.5px solid var(--ink); border-radius: 17px 17px 0 0; padding: 25px 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .auditor-head p { margin: 9px 0 0; max-width: 67ch; font-size: 14px; }
+    .auditor-indicator { font: 900 13px var(--code); border: 1.5px solid var(--ink); border-radius: 30px; padding: 8px 12px; white-space: nowrap; }
+    .auditor-body { border: 1.5px solid var(--ink); border-top: 0; border-radius: 0 0 17px 17px; background: var(--white); padding: 28px; }
+    .audit-guide { display: grid; grid-template-columns: 200px 1fr; gap: 25px; padding-bottom: 24px; }
+    .audit-guide p { margin: 0; color: var(--muted); font-size: 14px; max-width: 63ch; }
+    .mutation-list { border-top: 1.5px solid var(--ink); }
+    .mutation { display: grid; grid-template-columns: 54px minmax(155px, .7fr) minmax(0, 1.3fr); gap: 18px; align-items: start; border-bottom: 1px solid var(--line); padding: 18px 0; }
+    .mutation-number { font: 900 22px var(--display); color: var(--blue-dark); }
+    .mutation strong { font: 800 14px var(--code); }
+    .mutation p { margin: 5px 0 0; font-size: 14px; color: var(--muted); }
+    .mutation code { font: 13px/1.6 var(--code); overflow-wrap: anywhere; }
+    .mutation .from { text-decoration: line-through; text-decoration-color: #ae3942; }
+    .mutation .to { background: var(--lime); padding: 2px 5px; }
+    .auditor-warning { margin: 20px 0 0; font-size: 13px; color: var(--muted); }
+    .report { margin-top: 30px; border: 2px solid var(--blue); border-radius: 15px; overflow: hidden; }
+    .blue-band { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 23px; color: var(--white); background: var(--blue); }
+    .blue-band h3 { font-size: 22px; }
+    .result-score { font: 900 27px var(--display); letter-spacing: -.05em; white-space: nowrap; }
+    .report-inner { padding: 23px; }
+    .report-inner > p { margin: 0 0 20px; color: var(--muted); }
+    .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+    .report-grid h4 { margin: 0 0 8px; font-size: 14px; }
+    .report-grid pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft); border-radius: 8px; padding: 13px; margin: 0; font: 13px/1.6 var(--code); max-height: 220px; }
+    .report-tests { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 19px; }
+    .result-chip { background: #e7f7da; color: #24541e; border-radius: 30px; padding: 6px 10px; font: 800 12px var(--code); }
+    .result-chip[data-state="fail"] { background: #ffe1dc; color: #8e2424; }
+    .result-chip[data-state="unknown"] { background: #f1e6fa; color: #583468; }
+    .report-footer { padding-top: 17px; margin-top: 22px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+    footer { padding: 22px 0 35px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    footer .shell { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 9px; }
+
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr 320px; gap: 22px; }
+      .work-grid { grid-template-columns: 1fr; }
+      .clue-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .clue-board > h3, .clue-intro, .clue-board .aside-end { grid-column: 1 / -1; }
+      .clue { margin: 0; }
+    }
+    @media (max-width: 690px) {
+      .shell { width: min(100% - 32px, 1400px); }
+      .topbar-inner { min-height: 72px; }
+      .top-actions { gap: 2px; }
+      .hero-inner { grid-template-columns: 1fr; padding-block: 38px 44px; gap: 28px; }
+      .hero-copy { max-width: 500px; }
+      .challenge { justify-self: stretch; width: min(100% - 15px, 430px); }
+      .clock-value { font-size: clamp(4.2rem, 17vw, 6.8rem); }
+      .flow-inner { gap: 7px; }
+      .flow-item { flex-direction: column; align-items: flex-start; font-size: 12px; line-height: 1.3; }
+      .view-nav { flex-direction: column; align-items: flex-start; }
+      .role-note { text-align: left; }
+      .clue-board { grid-template-columns: 1fr; }
+      .explain, .audit-guide, .mutation, .report-grid { grid-template-columns: 1fr; }
+      .explain { gap: 17px; }
+      .mutation { gap: 5px; }
+      .finish-strip { flex-direction: column; align-items: stretch; }
+      .finish-button { width: 100%; }
+      .auditor-head { align-items: flex-start; flex-direction: column; }
+      .history-head { flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 400px) {
+      .topbar-inner { flex-wrap: wrap; padding-block: 13px; gap: 8px; }
+      .top-actions { width: 100%; justify-content: space-between; }
+      .hero-kicker { margin-bottom: 12px; }
+      .clock-face { padding: 18px 19px 24px; }
+      .clock-value { font-size: 17vw; }
+      .flow-inner { padding-block: 14px; }
+      .clue-board, .auditor-body { padding: 17px; }
+      .view-button { padding-inline: 14px; }
+      .history-body, .history-head { padding-inline: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><span>{ }</span></span><span>Learning Studio<br>Go / лаборатория</span></div>
+      <div class="top-actions"><span class="demo-tag">Защита №<span id="defense-number">—</span></span><button class="history-link" id="history-toggle" type="button" aria-controls="history-panel" aria-expanded="false">История тестов: <span id="history-count">0</span></button><button class="reset" type="button" id="new-defense">Новая защита</button></div>
+    </div>
+  </header>
+
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="shell hero-inner">
+      <div class="hero-copy">
+        <p class="hero-kicker">Задача 01 / три мутации в Go</p>
+        <h1 id="hero-title">Найди причину.<br>Верни логику.</h1>
+        <p>Три теста сигналят об ошибках в небольшом проекте. За десять минут найди, исправь и объясни, что именно сломалось.</p>
+        <p class="hash-caption">SHA-256 защиты: <code id="defense-hash">Создаётся…</code></p>
+      </div>
+      <div class="challenge">
+        <div class="clock-face"><p class="clock-label">Время на защиту</p><time class="clock-value" id="clock" aria-label="10 минут 0 секунд">10:00</time><p class="clock-caption" id="clock-caption">Таймер запустится по нажатию</p></div>
+        <button class="start-button" id="start" type="button" disabled>Начать 10 минут</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="flow" aria-label="Этапы защиты">
+    <div class="shell flow-inner">
+      <div class="flow-item" data-step="1" data-on="true"><b>1</b><span>Изучи сигналы</span></div>
+      <div class="flow-item" data-step="2"><b>2</b><span>Исправь и проверь</span></div>
+      <div class="flow-item" data-step="3"><b>3</b><span>Объясни решение</span></div>
+    </div>
+  </div>
+
+  <section class="history shell" id="history-panel" aria-labelledby="history-title" hidden>
+    <div class="history-head"><h2 id="history-title">История тестов</h2><p>Каждая защита, запуск и отдельный тест получают номер и свой SHA-256. История этого прототипа хранится в браузере.</p></div>
+    <div class="history-body" id="history-list"></div>
+  </section>
+
+  <main class="shell">
+    <div class="view-nav">
+      <nav class="view-tabs" aria-label="Роль в демо">
+        <button class="view-button" type="button" data-view="student" aria-pressed="true" aria-controls="student-view">Студент</button>
+        <button class="view-button" type="button" data-view="auditor" aria-pressed="false" aria-controls="auditor-view">Аудитор</button>
+      </nav>
+      <p class="role-note">В демо обе роли видны в одной вкладке. В настоящей сессии карта мутаций доступна только аудитору.</p>
+    </div>
+
+    <section id="student-view" aria-labelledby="student-title">
+      <h2 id="student-title">Твоя гипотеза — в коде</h2>
+      <p class="section-lead">Правь только <code>sample.go</code>. Тесты и модуль можно посмотреть, но не изменить. Начни защиту, чтобы открыть редактор.</p>
+      <div class="work-grid">
+        <div class="workspace">
+          <div class="editor-box">
+            <div class="editor-top"><strong>Файлы проекта / example.com/audit-demo</strong><span class="language-tag">GO 1.22</span></div>
+            <div class="file-tabs" aria-label="Файлы проекта">
+              <button type="button" class="file-tab" data-file="sample.go" aria-pressed="true">sample.go</button>
+              <button type="button" class="file-tab" data-file="sample_test.go" aria-pressed="false">sample_test.go</button>
+              <button type="button" class="file-tab" data-file="go.mod" aria-pressed="false">go.mod</button>
+            </div>
+            <div class="editor-area"><textarea id="source" aria-label="Содержимое файла sample.go" spellcheck="false" readonly></textarea></div>
+            <div class="editor-foot"><span id="edit-state">Только просмотр до старта</span><span id="file-state">sample.go · редактируемый файл</span></div>
+          </div>
+          <div class="run-row"><button type="button" class="run-button" id="run" disabled>Запустить тесты</button><p class="run-message" id="run-message" role="status" aria-live="polite">Ожидаем начала защиты</p></div>
+          <p class="simulation-note">Демо-проверка сравнивает три простых выражения в браузере. Она не запускает Go и не отправляет код на сервер.</p>
+        </div>
+        <aside class="clue-board" aria-label="Подсказки по тестам">
+          <h3>Что говорят тесты?</h3>
+          <p class="clue-intro">Сигналы из встроенного проекта. Вопросы помогают найти причину, но не показывают правку.</p>
+          <div class="clue" data-test="boundary"><div class="clue-title"><strong>TestBoundary</strong><span class="clue-status" data-state="initial">Исходный сбой</span></div><p>Оценка <code>70</code> должна давать доступ. Где проходит граница?</p></div>
+          <div class="clue" data-test="access"><div class="clue-title"><strong>TestAccess</strong><span class="clue-status" data-state="initial">Исходный сбой</span></div><p>Неактивный пользователь с <code>10</code> кредитами не должен войти. Как связаны условия?</p></div>
+          <div class="clue" data-test="remaining"><div class="clue-title"><strong>TestRemaining</strong><span class="clue-status" data-state="initial">Исходный сбой</span></div><p>При <code>total=10</code> и <code>used=3</code> остаток равен <code>7</code>. Что делает формула?</p></div>
+          <p class="aside-end">Это диагностические подсказки. Итоговая защита проверяет ещё и твоё объяснение.</p>
+        </aside>
+      </div>
+
+      <div class="explain">
+        <div><h2>Объясни ход мысли</h2><p class="explain-title">Что изменилось в поведении? Почему твоя правка восстанавливает ожидаемый результат?</p></div>
+        <div class="explain-form"><label for="explanation">Объяснение для аудитора</label><textarea id="explanation" placeholder="Например: на границе 70 условие должно включать само значение…" disabled></textarea><div class="explain-actions"><button type="button" class="save-button" id="save" disabled>Сохранить объяснение</button><span class="save-status" id="save-status" role="status" aria-live="polite">Пока нет объяснения · при завершении текст сохранится автоматически</span></div></div>
+      </div>
+      <div class="finish-strip"><div><h3>Готово защищать решение?</h3><p>Завершение покажет отчёт аудитора с результатами демо-проверки, исходными мутациями и твоим текстом.</p></div><button type="button" class="finish-button" id="finish" disabled>Завершить защиту</button></div>
+    </section>
+
+    <section id="auditor-view" aria-labelledby="auditor-title" hidden>
+      <div class="auditor-head"><div><h2 id="auditor-title">Взгляд аудитора</h2><p>Здесь открыта карта исходных мутаций. В реальной защите студент видит только свой код и тестовые сигналы, а решение принимает человек.</p></div><span class="auditor-indicator">Демо / отдельная роль</span></div>
+      <div class="auditor-body">
+        <div class="audit-guide"><h3>Три изменения.<br>Три гипотезы.</h3><p>Встроенный пример из <code>demo.go</code>: исходный проект проходил тесты, затем в трёх функциях заменили по одному оператору. Ниже — карта, которую видит аудитор до начала защиты.</p></div>
+        <div class="mutation-list">
+          <div class="mutation"><span class="mutation-number">01</span><div><strong>Eligible</strong><p>Граница допуска</p></div><div><code class="from">score &gt;= 70</code> <span aria-hidden="true">→</span> <code class="to">score &gt; 70</code><p>Значение 70 перестало проходить.</p></div></div>
+          <div class="mutation"><span class="mutation-number">02</span><div><strong>CanEnter</strong><p>Проверка доступа</p></div><div><code class="from">active &amp;&amp; credits &gt; 0</code> <span aria-hidden="true">→</span> <code class="to">active || credits &gt; 0</code><p>Кредитов стало достаточно даже без активности.</p></div></div>
+          <div class="mutation"><span class="mutation-number">03</span><div><strong>Remaining</strong><p>Остаток кредитов</p></div><div><code class="from">total - used</code> <span aria-hidden="true">→</span> <code class="to">total + used</code><p>Остаток стал расти после расхода.</p></div></div>
+        </div>
+        <p class="auditor-warning">Карта показывает сценарий этой локальной иллюстрации; она не получена из запущенного аудита.</p>
+        <section class="report" id="report" aria-labelledby="report-title" hidden>
+          <div class="blue-band"><h3 id="report-title">Отчёт о защите</h3><span class="result-score" id="result-score">0/3</span></div>
+          <div class="report-inner"><p id="report-summary"></p><div class="report-tests" id="report-tests" aria-label="Результаты тестовых случаев"></div><div class="report-grid"><div><h4>Код на старте</h4><pre id="before-code"></pre></div><div><h4>Код при завершении</h4><pre id="after-code"></pre></div><div><h4>Объяснение студента</h4><pre id="report-note"></pre></div><div><h4>Вывод для аудитора</h4><pre id="report-verdict"></pre></div></div><div class="report-footer">Это демонстрационный отчёт: произвольный Go-код здесь не компилируется. Прохождение трёх кейсов не доказывает понимание — аудитор оценивает правки и объяснение.</div></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="shell"><span>Learning Studio / концепт интерфейса для Live Code Mutation Audit</span><span>Локальное демо · без API · без настоящего go test</span></div></footer>
+
+  <script>
+    (() => {
+      "use strict";
+      const initialCode = `package sample
+
+func Eligible(score int) bool { return score > 70 }
+func CanEnter(active bool, credits int) bool { return active || credits > 0 }
+func Remaining(total, used int) int { return total + used }
+`;
+      const testCode = `package sample
+
+import "testing"
+
+func TestBoundary(t *testing.T) {
+	if !Eligible(70) { t.Fatal("score 70 should be eligible") }
+}
+
+func TestAccess(t *testing.T) {
+	if CanEnter(false, 10) { t.Fatal("inactive user cannot enter") }
+}
+
+func TestRemaining(t *testing.T) {
+	if Remaining(10, 3) != 7 { t.Fatal("remaining credits should be 7") }
+}
+`;
+      const moduleCode = "module example.com/audit-demo\n\ngo 1.22\n";
+      const names = { boundary: "TestBoundary", access: "TestAccess", remaining: "TestRemaining" };
+      const expected = { boundary: "score>=70", access: "active&&credits>0", remaining: "total-used" };
+      const incorrect = { boundary: "score>70", access: "active||credits>0", remaining: "total+used" };
+      const functions = { boundary: "Eligible", access: "CanEnter", remaining: "Remaining" };
+      const $ = (id) => document.getElementById(id);
+      const source = $("source");
+      const storageKey = "live-code-audit-studio-history-v1";
+      function loadHistory() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(storageKey));
+          if (saved && Array.isArray(saved.defenses) && Number.isSafeInteger(saved.nextDefense) && Number.isSafeInteger(saved.nextRun) && Number.isSafeInteger(saved.nextCase)) return saved;
+        } catch { /* Invalid or unavailable browser storage starts a fresh local history. */ }
+        return { nextDefense: 1, nextRun: 1, nextCase: 1, defenses: [] };
+      }
+      const history = loadHistory();
+      const state = { phase: "ready", file: "sample.go", code: initialCode, savedNote: "", deadline: 0, tick: null, defense: null, recording: false };
+
+      function saveHistory() {
+        try { localStorage.setItem(storageKey, JSON.stringify(history)); }
+        catch { $("run-message").textContent = "История не поместилась в хранилище браузера. Сохраните данные до закрытия вкладки."; }
+      }
+
+      function nonce() {
+        return crypto.randomUUID();
+      }
+
+      async function sha256(text) {
+        if (!crypto.subtle) throw Error("SHA-256 недоступен. Откройте макет через http://127.0.0.1:4184/studio.html");
+        const bytes = new TextEncoder().encode(text);
+        const digest = await crypto.subtle.digest("SHA-256", bytes);
+        return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+      }
+
+      function renderIdentity() {
+        $("defense-number").textContent = state.defense ? String(state.defense.number) : "—";
+        $("defense-hash").textContent = state.defense?.hash || "Создаётся…";
+      }
+
+      function historyNode(tag, text, className = "") {
+        const element = document.createElement(tag);
+        element.textContent = text;
+        if (className) element.className = className;
+        return element;
+      }
+
+      function renderHistory() {
+        const list = $("history-list");
+        list.replaceChildren();
+        const total = history.defenses.reduce((sum, defense) => sum + defense.runs.length, 0);
+        $("history-count").textContent = String(total);
+        if (!history.defenses.length) {
+          list.append(historyNode("p", "Пока нет защит и запусков тестов.", "history-empty"));
+          return;
+        }
+        for (const defense of [...history.defenses].reverse()) {
+          const article = document.createElement("article");
+          article.className = "history-defence";
+          article.append(historyNode("h3", `Защита №${defense.number}`));
+          const status = { ready: "ожидает старта", active: "идёт", finished: "завершена", interrupted: "прервана" }[defense.status] || defense.status;
+          article.append(historyNode("p", `${new Date(defense.createdAt).toLocaleString("ru-RU")} · ${status} · запусков ${defense.runs.length}`, "history-meta"));
+          article.append(historyNode("code", `SHA-256 защиты: ${defense.hash}`, "history-hash"));
+          if (!defense.runs.length) article.append(historyNode("p", "Запусков тестов пока нет.", "history-meta"));
+          for (const run of [...defense.runs].reverse()) {
+            const details = document.createElement("details");
+            details.className = "history-run";
+            const summary = historyNode("summary", `Запуск №${run.number} · ${run.kind === "final" ? "итоговый" : "ручной"} · ${run.passed}/3 пройдено`);
+            details.append(summary);
+            details.append(historyNode("code", `SHA-256 запуска: ${run.hash}`, "history-hash"));
+            details.append(historyNode("code", `SHA-256 версии кода: ${run.codeHash}`, "history-hash"));
+            const cases = document.createElement("ul");
+            cases.className = "history-tests";
+            for (const result of run.cases) {
+              const row = document.createElement("li");
+              row.dataset.state = result.result;
+              row.append(historyNode("strong", `Тест №${result.number} · ${result.name} · ${result.result === "pass" ? "пройден" : result.result === "fail" ? "сбой" : "не распознан"}`));
+              row.append(historyNode("code", `SHA-256 теста: ${result.hash}`, "history-hash"));
+              cases.append(row);
+            }
+            details.append(cases);
+            article.append(details);
+          }
+          list.append(article);
+        }
+      }
+
+      async function recordRun(kind, results) {
+        const defense = state.defense;
+        const number = history.nextRun++;
+        const codeHash = await sha256(state.code);
+        const at = new Date().toISOString();
+        const hash = await sha256(`run|${defense.hash}|${number}|${codeHash}|${at}|${nonce()}`);
+        const cases = [];
+        for (const key of Object.keys(names)) {
+          const caseNumber = history.nextCase++;
+          cases.push({ number: caseNumber, name: names[key], result: results[key], hash: await sha256(`test|${hash}|${caseNumber}|${names[key]}|${results[key]}`) });
+        }
+        const run = { number, hash, codeHash, at, kind, passed: Object.values(results).filter((value) => value === "pass").length, cases };
+        defense.runs.push(run);
+        defense.code = state.code;
+        saveHistory();
+        renderHistory();
+        return run;
+      }
+
+      function showView(view) {
+        $("student-view").hidden = view !== "student";
+        $("auditor-view").hidden = view !== "auditor";
+        document.querySelectorAll("[data-view]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.view === view));
+        });
+      }
+
+      function showFile(file) {
+        if (state.file === "sample.go") state.code = source.value;
+        if (state.defense) { state.defense.code = state.code; saveHistory(); }
+        state.file = file;
+        source.value = file === "sample.go" ? state.code : file === "sample_test.go" ? testCode : moduleCode;
+        source.readOnly = state.phase !== "active" || file !== "sample.go";
+        source.setAttribute("aria-label", "Содержимое файла " + file);
+        $("file-state").textContent = file === "sample.go" ? "sample.go · редактируемый файл" : file + " · только просмотр";
+        $("edit-state").textContent = state.phase === "active" && file === "sample.go" ? "Изменения остаются в этом демо" : "Только просмотр";
+        document.querySelectorAll("[data-file]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.file === file));
+        });
+      }
+
+      function clock(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const rest = seconds % 60;
+        $("clock").textContent = String(minutes).padStart(2, "0") + ":" + String(rest).padStart(2, "0");
+        $("clock").setAttribute("aria-label", minutes + " минут " + rest + " секунд");
+      }
+
+      function readResults() {
+        // This small, honest demo recognizes only the expressions used in its sample project.
+        const results = {};
+        for (const key of Object.keys(functions)) {
+          const matcher = new RegExp("\\bfunc\\s+" + functions[key] + "\\s*\\([^)]*\\)\\s*(?:bool|int)\\s*\\{\\s*return\\s+([^;\\n}]+)\\s*;?\\s*\\}");
+          const match = state.code.match(matcher);
+          const expression = match ? match[1].replace(/\s+/g, "").replace(/^\((.*)\)$/, "$1") : "";
+          results[key] = expression === expected[key] ? "pass" : expression === incorrect[key] ? "fail" : "unknown";
+        }
+        return results;
+      }
+
+      function paintResults(results) {
+        for (const key of Object.keys(names)) {
+          const label = document.querySelector('[data-test="' + key + '"] .clue-status');
+          label.dataset.state = results[key];
+          label.textContent = results[key] === "pass" ? "Проходит · демо" : results[key] === "fail" ? "Не проходит · демо" : "Не распознано";
+        }
+        const passed = Object.values(results).filter((result) => result === "pass").length;
+        const unknown = Object.values(results).filter((result) => result === "unknown").length;
+        $("run-message").textContent = unknown ? passed + "/3 пройдено · " + unknown + " не распознано" : passed + "/3 пройдено в демо-проверке";
+        return passed;
+      }
+
+      function showFinishedReport(results, scroll) {
+        const passed = paintResults(results);
+        $("result-score").textContent = passed + "/3";
+        $("report-summary").textContent = "Демо-сессия завершена. Результаты ниже рассчитаны только для распознаваемых выражений встроенного примера.";
+        $("report-tests").replaceChildren();
+        for (const key of Object.keys(names)) {
+          const chip = document.createElement("span");
+          chip.className = "result-chip";
+          chip.dataset.state = results[key];
+          chip.textContent = names[key] + ": " + (results[key] === "pass" ? "пройден" : results[key] === "fail" ? "сбой" : "не распознан");
+          $("report-tests").append(chip);
+        }
+        $("before-code").textContent = initialCode;
+        $("after-code").textContent = state.code;
+        $("report-note").textContent = state.savedNote || "Объяснение не сохранено.";
+        $("report-verdict").textContent = Object.values(results).includes("unknown")
+          ? "Часть выражений не поддерживается браузерной симуляцией. Нужна настоящая проверка Go и оценка аудитора."
+          : passed === 3
+            ? "Все три учебных кейса пройдены. Аудитору остаётся оценить ход решения и объяснение."
+            : "Не все учебные кейсы пройдены. Сопоставьте правки, сигналы тестов и объяснение.";
+        $("clock-caption").textContent = "Защита завершена";
+        $("start").disabled = true;
+        $("start").textContent = "Защита завершена";
+        $("run").disabled = true;
+        $("save").disabled = true;
+        $("finish").disabled = true;
+        $("explanation").disabled = true;
+        $("report").hidden = false;
+        document.querySelectorAll("[data-step]").forEach((item) => { item.dataset.on = "true"; });
+        showFile(state.file);
+        showView("auditor");
+        if (scroll) $("report").scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+      }
+
+      async function finish() {
+        if (state.phase !== "active" || state.recording) return;
+        state.phase = "finishing";
+        state.recording = true;
+        if (state.file === "sample.go") state.code = source.value;
+        state.savedNote = $("explanation").value.trim();
+        window.clearInterval(state.tick);
+        state.tick = null;
+        const results = readResults();
+        paintResults(results);
+        await recordRun("final", results);
+        state.phase = "finished";
+        state.recording = false;
+        state.defense.status = "finished";
+        state.defense.endedAt = new Date().toISOString();
+        state.defense.note = state.savedNote;
+        state.defense.code = state.code;
+        saveHistory();
+        renderHistory();
+        showFinishedReport(results, true);
+      }
+
+      function activateUI() {
+        $("start").disabled = true;
+        $("start").textContent = "Защита идёт";
+        $("clock-caption").textContent = "Время до завершения";
+        $("run").disabled = false;
+        $("save").disabled = false;
+        $("finish").disabled = false;
+        $("explanation").disabled = false;
+        $("run-message").textContent = "Редактор открыт — проверь гипотезу";
+        document.querySelector('[data-step="2"]').dataset.on = "true";
+        showFile(state.file);
+        showView("student");
+        window.clearInterval(state.tick);
+        state.tick = window.setInterval(() => {
+          const remaining = Math.max(0, Math.ceil((state.deadline - Date.now()) / 1000));
+          clock(remaining);
+          if (remaining === 0) finish();
+        }, 250);
+      }
+
+      function start() {
+        if (state.phase !== "ready" || !state.defense) return;
+        state.phase = "active";
+        state.deadline = Date.now() + 10 * 60 * 1000;
+        state.defense.status = "active";
+        state.defense.deadline = state.deadline;
+        saveHistory();
+        renderHistory();
+        activateUI();
+      }
+
+      function resetView() {
+        window.clearInterval(state.tick);
+        state.tick = null;
+        state.phase = "ready";
+        state.file = "sample.go";
+        state.code = initialCode;
+        state.savedNote = "";
+        state.deadline = 0;
+        state.defense = null;
+        state.recording = false;
+        clock(600);
+        $("clock-caption").textContent = "Таймер запустится по нажатию";
+        $("start").disabled = false;
+        $("start").textContent = "Начать 10 минут";
+        $("run").disabled = true;
+        $("save").disabled = true;
+        $("finish").disabled = true;
+        $("explanation").disabled = true;
+        $("explanation").value = "";
+        $("save-status").textContent = "Пока нет объяснения · при завершении текст сохранится автоматически";
+        $("run-message").textContent = "Ожидаем начала защиты";
+        $("report").hidden = true;
+        document.querySelectorAll(".clue-status").forEach((label) => { label.dataset.state = "initial"; label.textContent = "Исходный сбой"; });
+        document.querySelectorAll("[data-step]").forEach((item) => { item.dataset.on = String(item.dataset.step === "1"); });
+        source.value = initialCode;
+        showFile("sample.go");
+        showView("student");
+        renderIdentity();
+      }
+
+      async function newDefense() {
+        if (state.recording) return;
+        if (state.defense?.status === "active") {
+          state.defense.status = "interrupted";
+          state.defense.endedAt = new Date().toISOString();
+          state.defense.code = state.code;
+          state.defense.note = $("explanation").value.trim();
+        }
+        resetView();
+        $("start").disabled = true;
+        $("new-defense").disabled = true;
+        try {
+          const number = history.nextDefense++;
+          const createdAt = new Date().toISOString();
+          const hash = await sha256(`defense|${number}|${createdAt}|${nonce()}`);
+          state.defense = { number, hash, createdAt, status: "ready", code: initialCode, note: "", deadline: 0, runs: [] };
+          history.defenses.push(state.defense);
+          saveHistory();
+          renderIdentity();
+          renderHistory();
+          $("start").disabled = false;
+        } catch (error) {
+          $("run-message").textContent = error.message;
+        } finally {
+          $("new-defense").disabled = false;
+        }
+      }
+
+      function restoreDefense(defense) {
+        resetView();
+        state.defense = defense;
+        state.code = defense.code || initialCode;
+        state.savedNote = defense.note || "";
+        state.deadline = Number(defense.deadline) || 0;
+        $("explanation").value = state.savedNote;
+        source.value = state.code;
+        if (defense.status === "active") state.phase = "active";
+        if (defense.status === "finished") state.phase = "finished";
+        showFile("sample.go");
+        renderIdentity();
+        renderHistory();
+        if (state.phase === "active") {
+          activateUI();
+          const previousRun = defense.runs.at(-1);
+          if (previousRun) {
+            const results = {};
+            for (const key of Object.keys(names)) results[key] = previousRun.cases.find((entry) => entry.name === names[key])?.result || "unknown";
+            paintResults(results);
+          }
+          clock(Math.max(0, Math.ceil((state.deadline - Date.now()) / 1000)));
+          if (Date.now() >= state.deadline) finish();
+        }
+        if (state.phase === "finished") {
+          const final = [...defense.runs].reverse().find((run) => run.kind === "final");
+          const results = {};
+          for (const key of Object.keys(names)) results[key] = final?.cases.find((entry) => entry.name === names[key])?.result || "unknown";
+          showFinishedReport(results, false);
+          clock(Math.max(0, Math.ceil((state.deadline - Date.parse(defense.endedAt || new Date())) / 1000)));
+        }
+      }
+
+      document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => showView(button.dataset.view)));
+      document.querySelectorAll("[data-file]").forEach((button) => button.addEventListener("click", () => showFile(button.dataset.file)));
+      $("start").addEventListener("click", start);
+      $("new-defense").addEventListener("click", () => { newDefense(); });
+      $("history-toggle").addEventListener("click", () => {
+        const opening = $("history-panel").hidden;
+        $("history-panel").hidden = !opening;
+        $("history-toggle").setAttribute("aria-expanded", String(opening));
+        if (opening) $("history-panel").scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+      });
+      $("run").addEventListener("click", async () => {
+        if (state.phase !== "active" || state.recording) return;
+        state.recording = true;
+        $("run").disabled = true;
+        $("finish").disabled = true;
+        $("new-defense").disabled = true;
+        try {
+          if (state.file === "sample.go") state.code = source.value;
+          const results = readResults();
+          paintResults(results);
+          const run = await recordRun("manual", results);
+          $("run-message").textContent = `Запуск №${run.number} · ${run.passed}/3 пройдено · SHA-256 ${run.hash.slice(0, 12)}…`;
+        } catch (error) {
+          $("run-message").textContent = error.message;
+        } finally {
+          state.recording = false;
+          $("run").disabled = state.phase !== "active";
+          $("finish").disabled = state.phase !== "active";
+          $("new-defense").disabled = false;
+        }
+      });
+      source.addEventListener("input", () => {
+        if (state.phase !== "active" || state.file !== "sample.go") return;
+        state.code = source.value;
+        if (state.defense) { state.defense.code = state.code; saveHistory(); }
+        $("run-message").textContent = "Код изменён — проверь тесты снова";
+        document.querySelectorAll(".clue-status").forEach((label) => { label.dataset.state = "initial"; label.textContent = "Нужна проверка"; });
+      });
+      $("explanation").addEventListener("input", () => {
+        if (state.phase === "active") $("save-status").textContent = "Есть несохранённый текст";
+      });
+      $("save").addEventListener("click", () => {
+        if (state.phase !== "active") return;
+        state.savedNote = $("explanation").value.trim();
+        if (state.defense) { state.defense.note = state.savedNote; saveHistory(); }
+        $("save-status").textContent = state.savedNote ? "Объяснение сохранено в демо" : "Добавь текст, чтобы аудитор увидел объяснение";
+        if (state.savedNote) document.querySelector('[data-step="3"]').dataset.on = "true";
+      });
+      $("finish").addEventListener("click", () => { finish().catch((error) => { $("run-message").textContent = error.message; }); });
+      renderHistory();
+      const previous = history.defenses.at(-1);
+      if (["ready", "active", "finished"].includes(previous?.status)) {
+        restoreDefense(previous);
+      } else {
+        newDefense();
+      }
+    })();
+  </script>
+</body>
+</html>
